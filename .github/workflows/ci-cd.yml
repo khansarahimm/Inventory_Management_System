@@ -28,15 +28,16 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Set Up PHP
+      - name: Set Up PHP (Upgrade to 8.2)
         uses: shivammathur/setup-php@v2
         with:
-          php-version: "8.1"
+          php-version: "8.2"
           extensions: mbstring, exif, pcntl, bcmath, gd, pdo_mysql
           coverage: none
 
-      - name: Install Dependencies
+      - name: Install Dependencies (Force Update)
         run: |
+          composer update --no-interaction
           composer install --no-interaction --prefer-dist --optimize-autoloader
 
       - name: Copy Environment File

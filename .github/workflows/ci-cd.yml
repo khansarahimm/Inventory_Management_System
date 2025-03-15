@@ -1,22 +1,21 @@
-name: Deploy Laravel App
+name: Laravel CI/CD Pipeline
 
 on:
   push:
     branches:
-      - main  # Change to your branch if needed
+      - main
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-
     services:
       mysql:
         image: mysql:8.0
         env:
-          MYSQL_ROOT_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
+          MYSQL_ROOT_PASSWORD: Admin@2025!?
           MYSQL_DATABASE: inventory_management_system
           MYSQL_USER: laravel
-          MYSQL_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
+          MYSQL_PASSWORD: Admin@2025!?
         ports:
           - 3306:3306
         options: >-
@@ -26,52 +25,48 @@ jobs:
           --health-retries 5
 
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v3
+      - name: Checkout Repository
+        uses: actions/checkout@v4
 
-      - name: Setup PHP
+      - name: Set Up PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.1'
-          extensions: mbstring, exif, pcntl, bcmath, gd, mysqli, pdo_mysql
+          php-version: "8.1"
+          extensions: mbstring, exif, pcntl, bcmath, gd, pdo_mysql
           coverage: none
 
-      - name: Install Composer Dependencies
-        run: composer install --no-interaction --prefer-dist --optimize-autoloader
+      - name: Install Dependencies
+        run: |
+          composer install --no-interaction --prefer-dist --optimize-autoloader
 
       - name: Copy Environment File
         run: cp .env.example .env
 
-      - name: Set Laravel Permissions
+      - name: Set Permissions
         run: chmod -R 777 storage bootstrap/cache
 
-      - name: Wait for MySQL to be Ready
-        run: |
-          echo "Waiting for MySQL..."
-          for i in {1..30}; do
-            if mysqladmin ping -h 127.0.0.1 --silent; then
-              echo "MySQL is ready!"
-              break
-            fi
-            echo "Waiting for MySQL..."
-            sleep 2
-          done
+      - name: Generate Application Key
+        run: php artisan key:generate
 
-      - name: Run Migrations
+      - name: Run Database Migrations
         env:
           DB_CONNECTION: mysql
           DB_HOST: 127.0.0.1
           DB_PORT: 3306
           DB_DATABASE: inventory_management_system
           DB_USERNAME: root
-          DB_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
+          DB_PASSWORD: Admin@2025!?
         run: php artisan migrate --force
 
-      - name: Clear Laravel Cache
-        run: php artisan config:clear && php artisan cache:clear
+      - name: Clear Cache and Optimize
+        run: |
+          php artisan cache:clear
+          php artisan config:clear
+          php artisan config:cache
+          php artisan route:cache
+          php artisan view:cache
 
-      - name: Restart Services
-        run: sudo systemctl restart nginx php8.1-fpm
-
-      - name: Deployment Complete
-        run: echo "✅ Deployment successful!"
+      - name: Deploy Application
+        run: |
+          php artisan storage:link
+          php artisan optimize

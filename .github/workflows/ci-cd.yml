@@ -40,8 +40,20 @@ jobs:
       - name: Copy Environment File
         run: cp .env.example .env
 
+      - name: Update .env for CI
+        run: |
+          sed -i "s/DB_CONNECTION=.*/DB_CONNECTION=mysql/" .env
+          sed -i "s/DB_HOST=.*/DB_HOST=mysql/" .env
+          sed -i "s/DB_PORT=.*/DB_PORT=3306/" .env
+          sed -i "s/DB_DATABASE=.*/DB_DATABASE=inventory_management_system/" .env
+          sed -i "s/DB_USERNAME=.*/DB_USERNAME=root/" .env
+          sed -i "s/DB_PASSWORD=.*/DB_PASSWORD=rootpassword/" .env
+
       - name: Generate Application Key
         run: php artisan key:generate
+
+      - name: Wait for MySQL to be ready
+        run: sleep 20
 
       - name: Run Migrations
         run: php artisan migrate --force

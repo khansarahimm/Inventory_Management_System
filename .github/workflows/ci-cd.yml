@@ -8,21 +8,6 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    services:
-      mysql:
-        image: mysql:8.0
-        env:
-          MYSQL_ROOT_PASSWORD: Admin@2025!?
-          MYSQL_DATABASE: inventory_management_system
-          MYSQL_USER: laravel
-          MYSQL_PASSWORD: Admin@2025!?
-        ports:
-          - 3306:3306
-        options: >-
-          --health-cmd "mysqladmin ping -h localhost --silent"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
 
     steps:
       - name: Checkout Repository
@@ -52,11 +37,11 @@ jobs:
       - name: Run Database Migrations
         env:
           DB_CONNECTION: mysql
-          DB_HOST: 127.0.0.1
-          DB_PORT: 3306
-          DB_DATABASE: inventory_management_system
-          DB_USERNAME: root
-          DB_PASSWORD: Admin@2025!?
+          DB_HOST: ${{ secrets.DB_HOST }}
+          DB_PORT: ${{ secrets.DB_PORT }}
+          DB_DATABASE: ${{ secrets.DB_DATABASE }}
+          DB_USERNAME: ${{ secrets.DB_USERNAME }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
         run: php artisan migrate --force
 
       - name: Clear Cache and Optimize

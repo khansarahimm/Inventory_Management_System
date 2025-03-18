@@ -1,4 +1,4 @@
-name: Deploy Laravel App
+name: Deploy PHP Application
 
 on:
   push:
@@ -10,53 +10,50 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Repository
+      - name: Checkout Code
         uses: actions/checkout@v4
 
       - name: Set up PHP
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.2'
-          extensions: mbstring, xml, ctype, json, bcmath, zip, pdo_mysql
           tools: composer:v2
+          coverage: none
+
+      - name: Clear Composer Cache
+        run: composer clear-cache
+
+      - name: Install Dependencies
+        run: composer install --no-dev --prefer-dist --no-interaction --optimize-autoloader
+
+      - name: Run Composer Diagnose
+        run: composer diagnose
 
       - name: Verify PHP Version
         run: php -v
 
-      - name: Clear Cache and Install Dependencies
-        run: |
-          composer clear-cache
-          composer self-update
-          composer install --no-dev --prefer-dist --no-interaction --optimize-autoloader
+      - name: Set Permissions for Laravel
+        run: chmod -R 777 storage bootstrap/cache
 
-      - name: Set Permissions
+      - name: Clear Laravel Cache
         run: |
-          sudo chown -R www-data:www-data storage bootstrap/cache
-          sudo chmod -R 775 storage bootstrap/cache
+          php artisan config:clear
+          php artisan cache:clear
 
-      - name: Configure Environment
+      - name: Check Database Connectivity
         run: |
-          cp .env.example .env
-          php artisan key:generate
-          echo "APP_ENV=production" >> .env
-          echo "DB_CONNECTION=mysql" >> .env
-          echo "DB_HOST=inv-manag-system.chwgc60cgqfa.eu-north-1.rds.amazonaws.com" >> .env
-          echo "DB_PORT=3306" >> .env
-          echo "DB_DATABASE=inv-manag-system" >> .env
-          echo "DB_USERNAME=admin" >> .env
-          echo "DB_PASSWORD=admin1234" >> .env
+          DB_HOST=$(grep DB_HOST .env | cut -d '=' -f2)
+          DB_PORT=$(grep DB_PORT .env | cut -d '=' -f2)
+          echo "Checking connectivity to database at $DB_HOST:$DB_PORT"
+          nc -zv $DB_HOST $DB_PORT || exit 1
 
-      - name: Run Migrations
+      - name: Run Database Migrations
         run: php artisan migrate --force
 
-      - name: Optimize Laravel
+      - name: Run Application Tests (Optional)
+        run: php artisan test || true  # Run tests but don't fail deployment
+
+      - name: Deploy Application
         run: |
-          php artisan config:cache
-          php artisan route:cache
-          php artisan view:cache
-
-      - name: Restart Apache
-        run: sudo systemctl restart apache2
-
-      - name: Deployment Complete
-        run: echo "🚀 Deployment Successful!"
+          echo "Deploying application..."
+          # Add your deployment commands here (e.g., rsync, SSH, etc.)

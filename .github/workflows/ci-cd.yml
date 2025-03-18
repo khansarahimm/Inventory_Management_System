@@ -1,9 +1,9 @@
-name: Laravel CI/CD Pipeline
+name: Deploy Laravel App
 
 on:
   push:
     branches:
-      - main
+      - main  # Change this if using a different branch
 
 jobs:
   deploy:
@@ -13,56 +13,65 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Set Up PHP (Upgrade to 8.2)
+      - name: Set up PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: "8.2"
-          extensions: mbstring, exif, pcntl, bcmath, gd, pdo_mysql
+          php-version: '8.1'  # Change based on your PHP version
+          extensions: mbstring, xml, ctype, json, bcmath, zip, pdo_mysql
           coverage: none
 
-      - name: Install Dependencies (Force Update)
+      - name: Set up MySQL
         run: |
-          composer install --no-interaction --prefer-dist --optimize-autoloader
+          sudo systemctl start mysql
+          mysql -u root -e "CREATE DATABASE IF NOT EXISTS laravel_db;"
+          mysql -u root -e "CREATE USER 'laravel_user'@'localhost' IDENTIFIED BY 'securepassword';"
+          mysql -u root -e "GRANT ALL PRIVILEGES ON laravel_db.* TO 'laravel_user'@'localhost';"
+          mysql -u root -e "FLUSH PRIVILEGES;"
+
+      - name: Install Dependencies
+        run: composer install --no-dev --prefer-dist --no-interaction --optimize-autoloader
 
       - name: Set Permissions
         run: chmod -R 777 storage bootstrap/cache
 
-      - name: Create Environment File
+      - name: Copy and Configure .env File
         run: |
-          echo "APP_KEY=${{ secrets.APP_KEY }}" > .env
-          echo "DB_CONNECTION=mysql" >> .env
-          echo "DB_HOST=${{ secrets.DB_HOST }}" >> .env
-          echo "DB_PORT=${{ secrets.DB_PORT }}" >> .env
-          echo "DB_DATABASE=${{ secrets.DB_DATABASE }}" >> .env
-          echo "DB_USERNAME=${{ secrets.DB_USERNAME }}" >> .env
-          echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env
+          cp .env.example .env
+          echo "APP_KEY=$(php artisan key:generate --show)" >> .env
           echo "APP_ENV=production" >> .env
-          echo "APP_DEBUG=false" >> .env
+          echo "DB_CONNECTION=mysql" >> .env
+          echo "DB_HOST=127.0.0.1" >> .env
+          echo "DB_PORT=3306" >> .env
+          echo "DB_DATABASE=laravel_db" >> .env
+          echo "DB_USERNAME=laravel_user" >> .env
+          echo "DB_PASSWORD=securepassword" >> .env
 
-      - name: Generate Application Key
-        run: php artisan key:generate
-
-      - name: Wait for Database Connection
-        run: |
-          echo "Waiting for database connection..."
-          for i in {1..30}; do
-            nc -z -v -w5 ${{ secrets.DB_HOST }} ${{ secrets.DB_PORT }} && break
-            echo "Database not ready, retrying in 5 seconds..."
-            sleep 5
-          done
-
-      - name: Run Database Migrations
+      - name: Run Migrations
         run: php artisan migrate --force
 
-      - name: Clear Cache and Optimize
+      - name: Cache Config & Routes
         run: |
-          php artisan cache:clear
-          php artisan config:clear
           php artisan config:cache
           php artisan route:cache
           php artisan view:cache
 
-      - name: Deploy Application
+      - name: Setup Supervisor (Queue Worker)
         run: |
-          php artisan storage:link
-          php artisan optimize
+          sudo apt-get install supervisor -y
+          echo "[program:laravel-worker]
+          process_name=%(program_name)s_%(process_num)02d
+          command=php /var/www/html/artisan queue:work --tries=3
+          autostart=true
+          autorestart=true
+          numprocs=1
+          redirect_stderr=true
+          stdout_logfile=/var/log/laravel-worker.log" | sudo tee /etc/supervisor/conf.d/laravel-worker.conf
+          sudo supervisorctl reread
+          sudo supervisorctl update
+          sudo supervisorctl start laravel-worker:*
+
+      - name: Restart Server
+        run: sudo systemctl restart nginx php8.1-fpm
+
+      - name: Deploy Completed
+        run: echo "🚀 Deployment Successful!"

@@ -1,4 +1,4 @@
-name: Deploy PHP Application
+name: Laravel CI/CD Pipeline
 
 on:
   push:
@@ -13,47 +13,59 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Set up PHP
+      - name: Set Up PHP
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.2'
+          extensions: mbstring, bcmath, pdo_mysql
           tools: composer:v2
-          coverage: none
 
-      - name: Clear Composer Cache
-        run: composer clear-cache
+      - name: Set Up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
 
-      - name: Install Dependencies
+      - name: Install Composer Dependencies
         run: composer install --no-dev --prefer-dist --no-interaction --optimize-autoloader
 
-      - name: Run Composer Diagnose
-        run: composer diagnose
-
-      - name: Verify PHP Version
-        run: php -v
+      - name: Install NPM Dependencies
+        run: npm install && npm run build
 
       - name: Set Permissions for Laravel
         run: chmod -R 777 storage bootstrap/cache
 
-      - name: Clear Laravel Cache
+      - name: Clear Laravel Cache & Config
         run: |
           php artisan config:clear
           php artisan cache:clear
+          php artisan config:cache
+          php artisan route:cache
+          php artisan view:cache
 
-      - name: Check Database Connectivity
+      - name: Setup .env File
         run: |
-          DB_HOST=$(grep DB_HOST .env | cut -d '=' -f2)
-          DB_PORT=$(grep DB_PORT .env | cut -d '=' -f2)
-          echo "Checking connectivity to database at $DB_HOST:$DB_PORT"
-          nc -zv $DB_HOST $DB_PORT || exit 1
+          echo "APP_ENV=production" >> .env
+          echo "APP_KEY=${{ secrets.APP_KEY }}" >> .env
+          echo "DB_CONNECTION=mysql" >> .env
+          echo "DB_HOST=${{ secrets.DB_HOST }}" >> .env
+          echo "DB_PORT=3306" >> .env
+          echo "DB_DATABASE=${{ secrets.DB_DATABASE }}" >> .env
+          echo "DB_USERNAME=${{ secrets.DB_USERNAME }}" >> .env
+          echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env
 
-      - name: Run Database Migrations
-        run: php artisan migrate --force
+      - name: Check Database Connection
+        run: |
+          echo "Checking database connection..."
+          nc -zv ${{ secrets.DB_HOST }} 3306
 
-      - name: Run Application Tests (Optional)
+      - name: Run Migrations & Seed Database
+        run: php artisan migrate --force --seed
+
+      - name: Run Laravel Tests
         run: php artisan test || true  # Run tests but don't fail deployment
 
       - name: Deploy Application
         run: |
           echo "Deploying application..."
-          # Add your deployment commands here (e.g., rsync, SSH, etc.)
+          # Replace the below line with your deployment process (e.g., SSH, Rsync)
+          # ssh user@server "cd /var/www/html && git pull origin main && php artisan optimize"

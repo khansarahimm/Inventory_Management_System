@@ -20,7 +20,7 @@ jobs:
         username: ${{ secrets.SERVER_USER }}
         key: ${{ secrets.SERVER_SSH_KEY }}
         script: |
-          cd /var/www/html/inventory_management_system
+          cd /var/www/html/Inventory_Management_System
           git reset --hard HEAD  # Prevent merge conflicts
           git pull origin main
           composer install --no-dev --prefer-dist

@@ -38,9 +38,9 @@ jobs:
         image: mysql:8.0
         env:
           MYSQL_ROOT_PASSWORD: password
-          MYSQL_DATABASE: test_db
-          MYSQL_USER: test_user
-          MYSQL_PASSWORD: password
+          MYSQL_DATABASE: My_Database
+          MYSQL_USER: root
+          MYSQL_PASSWORD: Admin@2025!?
         ports:
           - 3306:3306
         options: >-
@@ -77,7 +77,7 @@ jobs:
           DB_HOST: 127.0.0.1
           DB_PORT: 3306
           DB_DATABASE: Inventory_Management_System
-          DB_USERNAME: admin
+          DB_USERNAME: root
           DB_PASSWORD: Admin@2025!?
         run: php artisan migrate --force
 

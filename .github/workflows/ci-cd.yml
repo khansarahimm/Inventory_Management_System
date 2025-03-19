@@ -8,37 +8,12 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-
-      - name: Set Up PHP
-        uses: shivammathur/setup-php@v2
-        with:
-          php-version: '8.2'
-          extensions: mbstring, exif, pcntl, bcmath, gd, pdo_mysql
-
-      - name: Install Composer Dependencies
-        run: composer install --no-interaction --prefer-dist --optimize-autoloader
-
-      - name: Copy .env File
-        run: cp .env.example .env
-
-      - name: Set Directory Permissions
-        run: chmod -R 777 storage bootstrap/cache
-
-      - name: Generate Application Key
-        run: php artisan key:generate
-
-  test:
-    runs-on: ubuntu-latest
-    needs: build
     services:
       mysql:
         image: mysql:8.0
         env:
-          MYSQL_ROOT_PASSWORD: password
-          MYSQL_DATABASE: My_Database
+          MYSQL_ROOT_PASSWORD: Admin@2025!?
+          MYSQL_DATABASE: latest_db
           MYSQL_USER: root
           MYSQL_PASSWORD: Admin@2025!?
         ports:
@@ -50,7 +25,7 @@ jobs:
           --health-retries=3
 
     steps:
-      - name: Checkout Code
+      - name: Checkout Repository
         uses: actions/checkout@v4
 
       - name: Set Up PHP
@@ -59,17 +34,24 @@ jobs:
           php-version: '8.2'
           extensions: mbstring, exif, pcntl, bcmath, gd, pdo_mysql
 
-      - name: Install Composer Dependencies
+      - name: Install Dependencies
         run: composer install --no-interaction --prefer-dist --optimize-autoloader
 
-      - name: Copy .env File
+      - name: Copy Environment File
         run: cp .env.example .env
 
-      - name: Set Directory Permissions
+      - name: Set Permissions
         run: chmod -R 777 storage bootstrap/cache
 
       - name: Generate Application Key
         run: php artisan key:generate
+
+      - name: Wait for MySQL to be ready
+        run: |
+          until mysqladmin ping -h 127.0.0.1 --silent; do
+            echo 'Waiting for MySQL...'
+            sleep 2
+          done
 
       - name: Run Migrations
         env:
@@ -80,7 +62,7 @@ jobs:
           DB_USERNAME: root
           DB_PASSWORD: Admin@2025!?
         run: php artisan migrate --force
-      
+
       - name: Run Tests
         env:
           DB_CONNECTION: mysql
@@ -90,5 +72,3 @@ jobs:
           DB_USERNAME: root
           DB_PASSWORD: Admin@2025!?
         run: php artisan test
-      
-      -

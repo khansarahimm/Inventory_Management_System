@@ -60,10 +60,8 @@ jobs:
           sudo systemctl restart mysql
           sleep 10  # Ensure MySQL initializes properly
 
-      - name: Force Set MySQL Root Password
-        run: |
-          sudo mysql -u root -e "ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY 'Admin@2025!?';"
-          sudo mysql -u root -p'Admin@2025!?' -e "FLUSH PRIVILEGES;"
+      - name: Verify MySQL Status
+        run: sudo systemctl status mysql || true  # This won't fail the pipeline
 
       - name: Verify MySQL Connection
         run: |

@@ -9,6 +9,22 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
 
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: laravel_db
+          MYSQL_USER: laravel_user
+          MYSQL_PASSWORD: secret
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -u root --password=root"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=3
+
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -23,7 +39,7 @@ jobs:
       - name: Set Up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20' # ✅ Updated to match project requirements
+          node-version: '20'
           cache: npm
 
       - name: Install Composer Dependencies
@@ -48,16 +64,14 @@ jobs:
           echo "APP_ENV=production" > .env
           echo "APP_KEY=base64:YOUR_APP_KEY_HERE" >> .env  # Replace with actual APP_KEY
           echo "DB_CONNECTION=mysql" >> .env
-          echo "DB_HOST=inv-manag-system.chwgc60cgqfa.eu-north-1.rds.amazonaws.com" >> .env
+          echo "DB_HOST=127.0.0.1" >> .env
           echo "DB_PORT=3306" >> .env
-          echo "DB_DATABASE=inv-manag-system" >> .env
-          echo "DB_USERNAME=admin" >> .env
-          echo "DB_PASSWORD=admin1234" >> .env
+          echo "DB_DATABASE=laravel_db" >> .env
+          echo "DB_USERNAME=laravel_user" >> .env
+          echo "DB_PASSWORD=secret" >> .env
 
-      - name: Check Database Connection
-        run: |
-          echo "Checking database connection..."
-          nc -zv inv-manag-system.chwgc60cgqfa.eu-north-1.rds.amazonaws.com 3306
+      - name: Wait for MySQL to be Ready
+        run: sleep 15 # Gives MySQL time to initialize
 
       - name: Run Migrations & Seed Database
         run: php artisan migrate --force --seed

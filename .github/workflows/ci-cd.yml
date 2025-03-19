@@ -9,22 +9,6 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
 
-    services:
-      mysql:
-        image: mysql:8.0
-        env:
-          MYSQL_ROOT_PASSWORD: root
-          MYSQL_DATABASE: laravel_db
-          MYSQL_USER: laravel_user
-          MYSQL_PASSWORD: secret
-        ports:
-          - 3306:3306
-        options: >-
-          --health-cmd="mysqladmin ping -h 127.0.0.1 -u root --password=root"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=3
-
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -51,32 +35,33 @@ jobs:
       - name: Set Permissions for Laravel
         run: chmod -R 777 storage bootstrap/cache
 
-      - name: Setup .env File
-        run: |
-          echo "APP_ENV=production" > .env
-          echo "APP_KEY=base64:YOUR_APP_KEY_HERE" >> .env  # Replace with actual APP_KEY
-          echo "DB_CONNECTION=mysql" >> .env
-          echo "DB_HOST=127.0.0.1" >> .env
-          echo "DB_PORT=3306" >> .env
-          echo "DB_DATABASE=laravel_db" >> .env
-          echo "DB_USERNAME=laravel_user" >> .env
-          echo "DB_PASSWORD=secret" >> .env
-
-      - name: Wait for MySQL to be Ready
-        run: |
-          for i in {1..20}; do
-            mysqladmin ping -h 127.0.0.1 -u laravel_user --password=secret && break
-            echo "Waiting for MySQL..."
-            sleep 3
-          done
-
-      - name: Clear & Cache Laravel Config
+      - name: Clear Laravel Cache & Config
         run: |
           php artisan config:clear
           php artisan cache:clear
           php artisan config:cache
           php artisan route:cache
           php artisan view:cache
+
+      - name: Setup .env File
+        run: |
+          echo "APP_ENV=local" > .env
+          echo "APP_DEBUG=true" >> .env
+          echo "APP_URL=http://127.0.0.1:8000" >> .env
+          echo "DB_CONNECTION=mysql" >> .env
+          echo "DB_HOST=127.0.0.1" >> .env
+          echo "DB_PORT=3306" >> .env
+          echo "DB_DATABASE=your_database_name" >> .env
+          echo "DB_USERNAME=root" >> .env
+          echo "DB_PASSWORD=your_password" >> .env
+
+      - name: Start MySQL Service
+        run: |
+          sudo systemctl start mysql
+          sleep 10  # Wait for MySQL to initialize
+
+      - name: Verify Database Connection
+        run: mysql -u root -p -e "SHOW DATABASES;"
 
       - name: Run Migrations & Seed Database
         run: php artisan migrate --force --seed

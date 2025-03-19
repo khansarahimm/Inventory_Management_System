@@ -51,9 +51,9 @@ jobs:
           echo "DB_CONNECTION=mysql" >> .env
           echo "DB_HOST=127.0.0.1" >> .env
           echo "DB_PORT=3306" >> .env
-          echo "DB_DATABASE=your_database_name" >> .env
+          echo "DB_DATABASE=Inventory_Management_System" >> .env
           echo "DB_USERNAME=root" >> .env
-          echo "DB_PASSWORD=your_password" >> .env
+          echo "DB_PASSWORD=Admin@2025!?" >> .env
 
       - name: Start MySQL Service
         run: |

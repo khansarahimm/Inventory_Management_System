@@ -20,15 +20,23 @@ jobs:
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan -p 22 -H ${{ secrets.SERVER_HOST }} > ~/.ssh/known_hosts
 
-      - name: Test SSH Connection
-        run: |
-          ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} "echo SSH Connection Successful"
-
       - name: Deploy to EC2
         run: |
           ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} << 'EOF'
           cd /var/www/html/your-laravel-app
-          git pull origin main
+          
+          # Ensure correct branch
+          git checkout main
+          
+          # Reset and pull latest changes
+          git reset --hard origin/main
+          git pull origin main --force
+          
+          # Set correct permissions
+          chmod -R 775 storage bootstrap/cache
+          chown -R www-data:www-data /var/www/html/your-laravel-app
+          
+          # Install dependencies and restart services
           composer install --no-dev --optimize-autoloader
           php artisan migrate --force
           php artisan config:clear

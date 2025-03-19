@@ -65,10 +65,9 @@ jobs:
 
       - name: Verify Database Connection
         env:
-          MYSQL_PWD: ${{ secrets.DB_PASSWORD }}  # Securely pass password
-        run: |
-          mysql -u root -e "SHOW DATABASES;"
-
+          MYSQL_PWD: Admin@2025!?
+        run: mysql -u root -e "SHOW DATABASES;"
+      
       - name: Run Migrations & Seed Database
         run: php artisan migrate --force --seed
 

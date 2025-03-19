@@ -21,9 +21,10 @@ jobs:
           tools: composer:v2
 
       - name: Set Up Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '20' # ✅ Updated to match project requirements
+          cache: npm
 
       - name: Install Composer Dependencies
         run: composer install --no-dev --prefer-dist --no-interaction --optimize-autoloader
@@ -44,19 +45,19 @@ jobs:
 
       - name: Setup .env File
         run: |
-          echo "APP_ENV=production" >> .env
-          echo "APP_KEY=${{ secrets.APP_KEY }}" >> .env
+          echo "APP_ENV=production" > .env
+          echo "APP_KEY=base64:YOUR_APP_KEY_HERE" >> .env  # Replace with actual APP_KEY
           echo "DB_CONNECTION=mysql" >> .env
-          echo "DB_HOST=${{ secrets.DB_HOST }}" >> .env
+          echo "DB_HOST=inv-manag-system.chwgc60cgqfa.eu-north-1.rds.amazonaws.com" >> .env
           echo "DB_PORT=3306" >> .env
-          echo "DB_DATABASE=${{ secrets.DB_DATABASE }}" >> .env
-          echo "DB_USERNAME=${{ secrets.DB_USERNAME }}" >> .env
-          echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env
+          echo "DB_DATABASE=inv-manag-system" >> .env
+          echo "DB_USERNAME=admin" >> .env
+          echo "DB_PASSWORD=admin1234" >> .env
 
       - name: Check Database Connection
         run: |
           echo "Checking database connection..."
-          nc -zv ${{ secrets.DB_HOST }} 3306
+          nc -zv inv-manag-system.chwgc60cgqfa.eu-north-1.rds.amazonaws.com 3306
 
       - name: Run Migrations & Seed Database
         run: php artisan migrate --force --seed
@@ -67,5 +68,5 @@ jobs:
       - name: Deploy Application
         run: |
           echo "Deploying application..."
-          # Replace the below line with your deployment process (e.g., SSH, Rsync)
+          # Replace this with your actual deployment process
           # ssh user@server "cd /var/www/html && git pull origin main && php artisan optimize"

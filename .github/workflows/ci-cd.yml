@@ -6,38 +6,21 @@ on:
       - main
 
 jobs:
-  deploy:
+  build:
     runs-on: ubuntu-latest
-    services:
-      mysql:
-        image: mysql:8.0
-        env:
-          MYSQL_ROOT_PASSWORD: Admin@2025!?
-          MYSQL_DATABASE: inventory_management_system
-          MYSQL_USER: laravel
-          MYSQL_PASSWORD: Admin@2025!?
-        ports:
-          - 3306:3306
-        options: >-
-          --health-cmd "mysqladmin ping -h localhost --silent"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Set Up PHP (Upgrade to 8.2)
+      - name: Set Up PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: "8.2"
+          php-version: '8.2'
           extensions: mbstring, exif, pcntl, bcmath, gd, pdo_mysql
-          coverage: none
 
-      - name: Install Dependencies (Force Update)
-        run: |
-          composer update --no-interaction
-          composer install --no-interaction --prefer-dist --optimize-autoloader
+      - name: Install Dependencies
+        run: composer install --no-interaction --prefer-dist --optimize-autoloader
+
       - name: Copy Environment File
         run: cp .env.example .env
 
@@ -46,25 +29,3 @@ jobs:
 
       - name: Generate Application Key
         run: php artisan key:generate
-
-      - name: Run Database Migrations
-        env:
-          DB_CONNECTION: mysql
-          DB_HOST: 127.0.0.1
-          DB_PORT: 3306
-          DB_DATABASE: inventory_management_system
-          DB_USERNAME: root
-          DB_PASSWORD: Admin@2025!?
-        run: php artisan migrate --force
-
-      - name: Clear Cache and Optimize
-        run: |
-          php artisan cache:clear
-          php artisan config:clear
-          php artisan config:cache
-          php artisan route:cache
-          php artisan view:cache
-      - name: Deploy Application
-        run: |
-          php artisan storage:link
-          php artisan optimize

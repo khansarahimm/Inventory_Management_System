@@ -45,31 +45,38 @@ jobs:
 
       - name: Setup .env File
         run: |
-          echo "APP_ENV=local" > .env
-          echo "APP_DEBUG=true" >> .env
-          echo "APP_URL=http://127.0.0.1:8000" >> .env
-          echo "DB_CONNECTION=mysql" >> .env
-          echo "DB_HOST=127.0.0.1" >> .env
-          echo "DB_PORT=3306" >> .env
-          echo "DB_DATABASE=Inventory_Management_System" >> .env
-          echo "DB_USERNAME=root" >> .env
-          echo "DB_PASSWORD=Admin@2025!?" >> .env
+          cat <<EOF > .env
+          APP_ENV=local
+          APP_DEBUG=true
+          APP_URL=http://127.0.0.1:8000
+          DB_CONNECTION=mysql
+          DB_HOST=127.0.0.1
+          DB_PORT=3306
+          DB_DATABASE=Inventory_Management_System
+          DB_USERNAME=root
+          DB_PASSWORD=Admin@2025!?
+          EOF
 
       - name: Start MySQL Service
         run: |
           sudo systemctl start mysql
-          sleep 10  # Wait for MySQL to initialize
+          sleep 10  # Give MySQL time to start
 
       - name: Verify MySQL Service
         run: sudo systemctl status mysql || true
 
       - name: Verify Database Connection
         env:
-          MYSQL_PWD: your_password  # Securely pass password
+          MYSQL_PWD: Admin@2025!?
         run: |
           mysql -u root -e "SHOW DATABASES;"
 
+      - name: Apply .env Configurations
+        run: php artisan config:clear && php artisan config:cache
+
       - name: Run Migrations & Seed Database
+        env:
+          MYSQL_PWD: Admin@2025!?
         run: php artisan migrate --force --seed
 
       - name: Run Laravel Tests

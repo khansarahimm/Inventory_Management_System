@@ -13,70 +13,23 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Set Up PHP
-        uses: shivammathur/setup-php@v2
-        with:
-          php-version: '8.2'
-          extensions: mbstring, bcmath, pdo_mysql
-          tools: composer:v2
-
-      - name: Set Up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: npm
-
-      - name: Install Composer Dependencies
-        run: composer install --no-dev --prefer-dist --no-interaction --optimize-autoloader
-
-      - name: Install NPM Dependencies
-        run: npm install && npm run build
-
-      - name: Set Permissions for Laravel
-        run: chmod -R 777 storage bootstrap/cache
-
-      - name: Clear Laravel Cache & Config
-        run: |
-          php artisan config:clear
-          php artisan cache:clear
-          php artisan config:cache
-          php artisan route:cache
-          php artisan view:cache
-
-      - name: Setup .env File
-        run: |
-          echo "APP_ENV=local" > .env
-          echo "APP_DEBUG=true" >> .env
-          echo "APP_URL=http://127.0.0.1:8000" >> .env
-          echo "DB_CONNECTION=mysql" >> .env
-          echo "DB_HOST=${{ secrets.DB_HOST }}" >> .env
-          echo "DB_PORT=3306" >> .env
-          echo "DB_DATABASE=${{ secrets.DB_DATABASE }}" >> .env
-          echo "DB_USERNAME=${{ secrets.DB_USERNAME }}" >> .env
-          echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env
-
       - name: Start MySQL Service
         run: |
           sudo systemctl start mysql
-          sleep 10  # Wait for MySQL to initialize
+          sudo systemctl enable mysql
+          sudo mysqladmin ping
 
-      - name: Verify MySQL Service
-        run: sudo systemctl status mysql || true
-
-      - name: Verify Database Connection
-        env:
-          MYSQL_PWD: ${{ secrets.DB_PASSWORD }}
+      - name: Debug MySQL Connection
         run: |
-          mysql -u ${{ secrets.DB_USERNAME }} -h ${{ secrets.DB_HOST }} -e "SHOW DATABASES;"
+          sudo mysql -e "SELECT user, host FROM mysql.user;"
+          sudo mysql -e "SHOW DATABASES;"
 
-      - name: Run Migrations & Seed Database
-        run: php artisan migrate --force --seed
-
-      - name: Run Laravel Tests
-        run: php artisan test || true  # Run tests but don't fail deployment
-
-      - name: Deploy Application
+      - name: Force Reset MySQL Root Password
         run: |
-          echo "Deploying application..."
-          # Replace this with your actual deployment process
-          # ssh user@server "cd /var/www/html && git pull origin main && php artisan optimize"
+          sudo mysql -e "ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY 'Admin@2025!?';"
+          sudo mysql -e "FLUSH PRIVILEGES;"
+
+      - name: Verify MySQL Access
+        run: |
+          export MYSQL_PWD='Admin@2025!?'
+          mysql -u root -e "SHOW DATABASES;"

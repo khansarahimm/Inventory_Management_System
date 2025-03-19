@@ -60,8 +60,14 @@ jobs:
           sudo systemctl start mysql
           sleep 10  # Wait for MySQL to initialize
 
+      - name: Verify MySQL Service
+        run: sudo systemctl status mysql || true
+
       - name: Verify Database Connection
-        run: mysql -u root -p -e "SHOW DATABASES;"
+        env:
+          MYSQL_PWD: your_password  # Securely pass password
+        run: |
+          mysql -u root -e "SHOW DATABASES;"
 
       - name: Run Migrations & Seed Database
         run: php artisan migrate --force --seed

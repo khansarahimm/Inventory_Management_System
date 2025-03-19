@@ -49,10 +49,10 @@ jobs:
           echo "APP_DEBUG=true" >> .env
           echo "APP_URL=http://127.0.0.1:8000" >> .env
           echo "DB_CONNECTION=mysql" >> .env
-          echo "DB_HOST=127.0.0.1" >> .env
+          echo "DB_HOST=${{ secrets.DB_HOST }}" >> .env
           echo "DB_PORT=3306" >> .env
-          echo "DB_DATABASE=latest_db" >> .env
-          echo "DB_USERNAME=root" >> .env
+          echo "DB_DATABASE=${{ secrets.DB_DATABASE }}" >> .env
+          echo "DB_USERNAME=${{ secrets.DB_USERNAME }}" >> .env
           echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env
 
       - name: Start MySQL Service
@@ -65,9 +65,10 @@ jobs:
 
       - name: Verify Database Connection
         env:
-          MYSQL_PWD: Admin@2025!?
-        run: mysql -u root -e "SHOW DATABASES;"
-      
+          MYSQL_PWD: ${{ secrets.DB_PASSWORD }}
+        run: |
+          mysql -u ${{ secrets.DB_USERNAME }} -h ${{ secrets.DB_HOST }} -e "SHOW DATABASES;"
+
       - name: Run Migrations & Seed Database
         run: php artisan migrate --force --seed
 

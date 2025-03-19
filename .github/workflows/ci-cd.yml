@@ -51,14 +51,6 @@ jobs:
       - name: Set Permissions for Laravel
         run: chmod -R 777 storage bootstrap/cache
 
-      - name: Clear Laravel Cache & Config
-        run: |
-          php artisan config:clear
-          php artisan cache:clear
-          php artisan config:cache
-          php artisan route:cache
-          php artisan view:cache
-
       - name: Setup .env File
         run: |
           echo "APP_ENV=production" > .env
@@ -71,7 +63,20 @@ jobs:
           echo "DB_PASSWORD=secret" >> .env
 
       - name: Wait for MySQL to be Ready
-        run: sleep 15 # Gives MySQL time to initialize
+        run: |
+          for i in {1..20}; do
+            mysqladmin ping -h 127.0.0.1 -u laravel_user --password=secret && break
+            echo "Waiting for MySQL..."
+            sleep 3
+          done
+
+      - name: Clear & Cache Laravel Config
+        run: |
+          php artisan config:clear
+          php artisan cache:clear
+          php artisan config:cache
+          php artisan route:cache
+          php artisan view:cache
 
       - name: Run Migrations & Seed Database
         run: php artisan migrate --force --seed

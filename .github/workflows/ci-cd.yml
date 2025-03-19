@@ -53,19 +53,21 @@ jobs:
           echo "DB_PORT=3306" >> .env
           echo "DB_DATABASE=Inventory_Management_System" >> .env
           echo "DB_USERNAME=root" >> .env
-          echo "DB_PASSWORD=Admin@2025!?" >> .env
+          echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env
 
-      - name: Restart MySQL Service
+      - name: Start MySQL Service
         run: |
-          sudo systemctl restart mysql
-          sleep 10  # Ensure MySQL initializes properly
+          sudo systemctl start mysql
+          sleep 10  # Wait for MySQL to initialize
 
-      - name: Verify MySQL Status
-        run: sudo systemctl status mysql || true  # This won't fail the pipeline
+      - name: Verify MySQL Service
+        run: sudo systemctl status mysql || true
 
-      - name: Verify MySQL Connection
+      - name: Verify Database Connection
+        env:
+          MYSQL_PWD: ${{ secrets.DB_PASSWORD }}  # Securely pass password
         run: |
-          mysql -u root -p'Admin@2025!?' -e "SHOW DATABASES;"
+          mysql -u root -e "SHOW DATABASES;"
 
       - name: Run Migrations & Seed Database
         run: php artisan migrate --force --seed

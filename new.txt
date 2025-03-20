@@ -1,0 +1,34 @@
+#include <iostream>
+#include <cstdlib>
+#include <pthread.h>
+
+using namespace std;
+
+#define NUM_THREADS 5
+
+const string threadNames[NUM_THREADS] = {"Alpha", "Beta", "Gamma", "Delta", "Epsilon"};
+
+void *PrintHello(void *threadid) {
+    long tid = *((long*)threadid);
+    delete (long*)threadid;
+    cout << "Hello from Thread-" << threadNames[tid] << endl;
+    pthread_exit(NULL);
+}
+
+int main() {
+    pthread_t threads[NUM_THREADS];
+    int rc;
+
+    for (int i = 0; i < NUM_THREADS; i++) {
+        cout << "Main: Creating Thread-" << threadNames[i] << endl;
+        long *ptr = new long(i);
+        rc = pthread_create(&threads[i], NULL, PrintHello, (void *)ptr);
+
+        if (rc) {
+            cout << "Error: Unable to create Thread-" << threadNames[i] << ", Error Code: " << rc << endl;
+            exit(-1);
+        }
+    }
+
+    pthread_exit(NULL);
+}

@@ -3,7 +3,7 @@ name: Deploy Laravel App to EC2
 on:
   push:
     branches:
-      - main  # Change this if your branch is different
+      - main  
 
 jobs:
   deploy:
@@ -21,7 +21,7 @@ jobs:
         key: ${{ secrets.SERVER_SSH_KEY }}
         script: |
           cd /var/www/html/Inventory_Management_System
-          git reset --hard HEAD  # Prevent merge conflicts
+          git reset --hard HEAD  
           git pull origin main
           composer install --no-dev --prefer-dist
           php artisan migrate --force
